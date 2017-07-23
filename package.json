@@ -1,0 +1,42 @@
+{
+  "bin": {
+    "robot": "./index"
+  },
+  "main": "./app.js",
+  "bugs": {
+    "url": "https://github.com/247521776/wechat-robot/issues"
+  },
+  "contributors": [
+    {
+      "name": "yanglei",
+      "email": "247521776@qq.com"
+    }
+  ],
+  "dependencies": {
+    "koa": "^2.3.0",
+    "koa-ejs": "^4.1.0",
+    "lodash": "^4.17.4",
+    "qrcode-terminal": "^0.11.0",
+    "request": "^2.81.0",
+    "wechat4u": "^0.7.5"
+  },
+  "description": "weixin robot",
+  "devDependencies": {
+    "mocha": "3.1.2"
+  },
+  "directories": {},
+  "license": "MIT",
+  "maintainers": [],
+  "name": "wechat-robot",
+  "optionalDependencies": {},
+  "engines": {
+    "node": ">= 7.6.0"
+  },
+  "readme": "ERROR: No README data found!",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/247521776/wechat-robot"
+  },
+  "scripts": {},
+  "version": "1.0.0"
+}
