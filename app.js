@@ -95,7 +95,7 @@ app.use(async (ctx, next) => {
                 }, (err, res, body) => {
                     const data = JSON.parse(body);
                     if(!err) {
-                        bot.sendMsg(body.info, userName);
+                        bot.sendMsg(data.text, userName);
                     }
                 });
                 break;
