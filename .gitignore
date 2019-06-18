@@ -1,3 +1,5 @@
 node_modules/
 src/tuLingConfig.json
 package-lock.json
+images/
+.idea/
