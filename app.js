@@ -11,6 +11,7 @@ let questions = {};
 let counts = {};
 const answer = require("./answer.json");
 const topic = Object.keys(answer);
+const robotName = "小小机器人。";
 
 render(app, {
     root: path.join(__dirname, 'view'),
@@ -85,6 +86,11 @@ app.use(async (ctx, next) => {
                     /**
                      * 文本消息
                      */
+                    const count = counts[msg.FromUserName];
+                    const isFirst = !count[msg.FromUserName] || Object.keys(count[msg.FromUserName]).length === 0;
+                    if (isFirst) {
+                        initMember(msg);
+                    }
                     guessPicture(msg);
                     autoReply(msg);
 
@@ -136,10 +142,11 @@ function guessPicture(msg) {
     }
 }
 
-function randomImage(type, total, fromUserName) {
+function randomImage(type, fromUserName) {
+    const total = Object.keys(answer[type]).length;
     const random = Math.floor(Math.random() * total);
     let question = questions[fromUserName];
-    if (answer[type][random]) {
+    if (random && answer[type][random]) {
         questions[fromUserName] = {
             time: question.time || Date.now() + (5 * 60 * 1000),
             answer: answer[type][random],
@@ -151,7 +158,7 @@ function randomImage(type, total, fromUserName) {
         return random;
     }
 
-    randomImage(type, total, fromUserName);
+    randomImage(type, fromUserName);
 }
 
 function autoReply(msg) {
@@ -211,7 +218,7 @@ function getAnswerName(msg) {
         const user = bot.contacts[msg.FromUserName];
         for (const member of user.MemberList) {
             if (member.UserName === answer_id) {
-                return member.DisplayName;
+                return delHtmlTag(member.NickName);
             }
         }
     }
@@ -221,8 +228,7 @@ function getAnswerName(msg) {
 
 function sendImage(msg, type) {
     const isFirst = Object.keys(questions[msg.FromUserName]).length === 0;
-    const total = Object.keys(answer[type]).length;
-    const random = randomImage(type, total, msg.FromUserName);
+    const random = randomImage(type, msg.FromUserName);
     let img = `./images/${type}/${random}`;
     const exist = fs.existsSync(`${img}.jpg`);
     if (exist) {
@@ -281,9 +287,12 @@ function settlement(msg, count) {
         });
     }
     users.sort((a, b) => {return b.count - a.count;});
-    for (let i = 0, len = users.length; i < len; i++) {
+    const len = users.length;
+    for (let i = 0; i < len; i++) {
         result_msg += `第${i + 1}名: ${users[i].name}答对${users[i].count}题。\n`;
     }
+
+    result_msg += `\n\n@${users[len - 1].name}被大家甩了几街，还不着急？`
     bot.sendMsg(result_msg, msg.FromUserName);
     questions[msg.FromUserName] = {};
     counts[msg.FromUserName] = {};
@@ -305,5 +314,24 @@ function getTip(msg, question) {
             encryptionInfo += "*";
         }
         bot.sendMsg(`答案为${question.answer.substr(0, 1)}${encryptionInfo}${question.answer.substr(lastWord, 1)}`, msg.FromUserName);
+    }
+}
+
+function delHtmlTag(str){
+    return str.replace(/<[^>]+>/g,""); //去掉所有的html标记
+}
+
+function initMember(msg) {
+    const fromUserName = msg.FromUserName;
+    const contact = bot.contacts[fromUserName];
+    const memberList = contact.MemberList;
+    if (memberList) {
+        counts[fromUserName] = {};
+        for (const member of memberList) {
+            const nickName = delHtmlTag(member.NickName);
+            if (nickName !== robotName) {
+                counts[fromUserName][nickName] = 0;
+            }
+        }
     }
 }
