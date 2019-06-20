@@ -122,8 +122,17 @@ function guessPicture(msg) {
     if (isGuessPicture) {
         sendImage(msg, type);
     }
+    else if (content === "结算") {
+        settlement(msg, counts[msg.FromUserName]);
+    }
+    else if (content === "过") {
+        guessPicture(setContent(msg, `猜${questions[msg.FromUserName].type}`));
+    }
+    else if (content === "提示") {
+        getTip(msg, questions[msg.FromUserName]);
+    }
     else {
-        checkAnswerAndNext(msg);
+        checkAnswerAndNext(msg, content);
     }
 }
 
@@ -136,9 +145,7 @@ function randomFun(type, total, fromUserName) {
             answer: answer[type][random],
             running: 1,
             type: type,
-            hint_time: Date.now() + (10 * 1000),
             hint: false,
-            hint_answer_time: Date.now() + (30 * 1000),
             hint_answer: false
         };
         return random;
@@ -213,6 +220,7 @@ function getAnswerName(msg) {
 }
 
 function sendImage(msg, type) {
+    const isFirst = Object.keys(questions[msg.FromUserName]).length === 0;
     const total = Object.keys(answer[type]).length;
     const random = randomFun(type, total, msg.FromUserName);
     let img = `./images/${type}/${random}`;
@@ -224,7 +232,6 @@ function sendImage(msg, type) {
         img += ".png";
     }
 
-    const isFirst = Object.keys(questions[msg.FromUserName]).length === 0;
     if (isFirst) {
         bot.sendMsg("开始猜图游戏，限时五分钟，看看谁五分钟之内答对最多！加油呦", msg.FromUserName);
     }
@@ -238,7 +245,7 @@ function sendImage(msg, type) {
         });
 }
 
-function checkAnswerAndNext(msg) {
+function checkAnswerAndNext(msg, content) {
     let question = questions[msg.FromUserName];
     const count = counts[msg.FromUserName];
     const answerName = getAnswerName(msg);
@@ -246,21 +253,7 @@ function checkAnswerAndNext(msg) {
     const question_time = question.time;
     const overtime = now > question_time;
     if (overtime) {
-        let result_msg = "";
-        const users = [];
-        for (const name in count) {
-            users.push({
-                name,
-                count: count[name]
-            });
-        }
-        users.sort((a, b) => {return b.count - a.count;});
-        for (let i = 0, len = users.length; i < len; i++) {
-            result_msg += `第${i + 1}名: ${users[i].name}答对${users[i].count}题。\n`;
-        }
-        bot.sendMsg(result_msg, msg.FromUserName);
-        questions[msg.FromUserName] = {};
-        counts[msg.FromUserName] = {};
+        settlement(msg, count);
     }
     else {
         const is_answer = content === question.answer;
@@ -275,13 +268,42 @@ function checkAnswerAndNext(msg) {
             bot.sendMsg(`恭喜${answerName}答对`, msg.FromUserName);
             guessPicture(setContent(msg, `猜${question.type}`));
         }
-        else if (now > question.hint_time && !question.hint) {
-            bot.sendMsg(`答案字数为${question.answer.length}`, msg.FromUserName);
-            question.hint = true;
+    }
+}
+
+function settlement(msg, count) {
+    let result_msg = "本轮成绩是\n";
+    const users = [];
+    for (const name in count) {
+        users.push({
+            name,
+            count: count[name]
+        });
+    }
+    users.sort((a, b) => {return b.count - a.count;});
+    for (let i = 0, len = users.length; i < len; i++) {
+        result_msg += `第${i + 1}名: ${users[i].name}答对${users[i].count}题。\n`;
+    }
+    bot.sendMsg(result_msg, msg.FromUserName);
+    questions[msg.FromUserName] = {};
+    counts[msg.FromUserName] = {};
+}
+
+function getTip(msg, question) {
+    if (!question.hint) {
+        bot.sendMsg(`答案字数为${question.answer.length}`, msg.FromUserName);
+        question.hint = true;
+    }
+    else if (!question.hint_answer) {
+        bot.sendMsg(`答案第一个字为${question.answer.substr(0, 1)}`, msg.FromUserName);
+        question.hint_answer = true;
+    }
+    else {
+        const lastWord = question.answer.length - 1;
+        let encryptionInfo = "";
+        for (let i = 0; i < lastWord - 1; i++) {
+            encryptionInfo += "*";
         }
-        else if (now > question.hint_answer_time && !question.hint_answer) {
-            bot.sendMsg(`答案第一个字为${question.answer.substr(0, 1)}`, msg.FromUserName);
-            question.hint_answer = true;
-        }
+        bot.sendMsg(`答案为${question.answer.substr(0, 1)}${encryptionInfo}${question.answer.substr(lastWord, 1)}`, msg.FromUserName);
     }
 }
