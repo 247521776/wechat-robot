@@ -9,6 +9,7 @@ const fs      = require("fs");
 const tuling  = require("./src/tuLingConfig.json");
 let questions = {};
 let counts = {};
+const useFunctions = {};
 const answer = require("./answer.json");
 const topic = Object.keys(answer);
 const robotName = "小小机器人。";
@@ -55,6 +56,7 @@ app.use(async (ctx, next) => {
             for (const id in bot.contacts) {
                 questions[id] = {};
                 counts[id] = {};
+                useFunctions[id] = {};
             }
         });
 
@@ -126,19 +128,22 @@ function guessPicture(msg) {
     const type = content.substr(1);
     const isGuessPicture = topic.includes(type);
     if (isGuessPicture) {
+        useFunctions[msg.FromUserName].guessPicture = 1;
         sendImage(msg, type);
     }
-    else if (content === "结算") {
-        settlement(msg, counts[msg.FromUserName]);
-    }
-    else if (content === "过") {
-        guessPicture(setContent(msg, `猜${questions[msg.FromUserName].type}`));
-    }
-    else if (content === "提示") {
-        getTip(msg, questions[msg.FromUserName]);
-    }
-    else {
-        checkAnswerAndNext(msg, content);
+    else if (useFunctions[msg.FromUserName].guessPicture) {
+        if (content === "结算") {
+            settlement(msg, counts[msg.FromUserName]);
+        }
+        else if (content === "过") {
+            guessPicture(setContent(msg, `猜${questions[msg.FromUserName].type}`));
+        }
+        else if (content === "提示") {
+            getTip(msg, questions[msg.FromUserName]);
+        }
+        else {
+            checkAnswerAndNext(msg, content);
+        }
     }
 }
 
@@ -292,7 +297,7 @@ function settlement(msg, count) {
         result_msg += `第${i + 1}名: ${users[i].name}答对${users[i].count}题。\n`;
     }
 
-    result_msg += `\n\n@${users[len - 1].name}被大家甩了几街，还不着急？`
+    result_msg += `\n\n@${users[len - 1].name} 被大家甩了几街，还不着急？`
     bot.sendMsg(result_msg, msg.FromUserName);
     questions[msg.FromUserName] = {};
     counts[msg.FromUserName] = {};
