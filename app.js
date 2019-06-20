@@ -10,7 +10,7 @@ const tuling  = require("./src/tuLingConfig.json");
 let questions = {};
 let counts = {};
 const answer = require("./answer.json");
-const topic = ["成语", "人物", "明星", "品牌", "国家", "城市", "动漫", "球队", "电影"];
+const topic = Object.keys(answer);
 
 render(app, {
     root: path.join(__dirname, 'view'),
@@ -136,7 +136,7 @@ function guessPicture(msg) {
     }
 }
 
-function randomFun(type, total, fromUserName) {
+function randomImage(type, total, fromUserName) {
     const random = Math.floor(Math.random() * total);
     let question = questions[fromUserName];
     if (answer[type][random]) {
@@ -151,7 +151,7 @@ function randomFun(type, total, fromUserName) {
         return random;
     }
 
-    randomFun(type, total, fromUserName);
+    randomImage(type, total, fromUserName);
 }
 
 function autoReply(msg) {
@@ -222,7 +222,7 @@ function getAnswerName(msg) {
 function sendImage(msg, type) {
     const isFirst = Object.keys(questions[msg.FromUserName]).length === 0;
     const total = Object.keys(answer[type]).length;
-    const random = randomFun(type, total, msg.FromUserName);
+    const random = randomImage(type, total, msg.FromUserName);
     let img = `./images/${type}/${random}`;
     const exist = fs.existsSync(`${img}.jpg`);
     if (exist) {
