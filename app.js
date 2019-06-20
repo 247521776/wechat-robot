@@ -1,6 +1,5 @@
 'use strict'
 const Wechat  = require('wechat4u');
-// const qrcode  = require('qrcode-terminal');
 const request = require('request');
 const koa     = require("koa");
 const app     = new koa();
@@ -58,12 +57,6 @@ app.use(async (ctx, next) => {
             }
         });
 
-        let i = 0;
-        bot.on("contacts-updated", (contacts) => {
-            for (const contact of contacts) {
-                bot.contacts[contact.UserName] = contact;
-            }
-        });
         /**
          * 登出成功事件
          */
@@ -123,75 +116,14 @@ app.listen(8000);
 console.log("服务启动");
 
 function guessPicture(msg) {
-    let question = questions[msg.FromUserName];
-    const count = counts[msg.FromUserName];
     const content = getContent(msg);
-    const answerName = getAnswerName(msg);
     const type = content.substr(1);
     const isGuessPicture = topic.includes(type);
     if (isGuessPicture) {
-        const total = Object.keys(answer[type]).length;
-        const random = randomFun(type, total, msg.FromUserName);
-        let img = `./images/${type}/${random}`;
-        const exist = fs.existsSync(`${img}.jpg`);
-        if (exist) {
-            img += ".jpg";
-        }
-        else {
-            img += ".png";
-        }
-        bot.uploadMedia(fs.createReadStream(img))
-            .then(res => {
-                return bot.sendPic(res.mediaId, msg.FromUserName);
-            })
-            .catch(err => {
-                console.log(`有问题图片:${img}`);
-                console.log(err);
-            });
+        sendImage(msg, type);
     }
     else {
-        const now = Date.now();
-        const question_time = question.time;
-        const overtime = now > question_time;
-        if (overtime) {
-            let result_msg = "";
-            const users = [];
-            for (const name in count) {
-                users.push({
-                    name,
-                    count: count[name]
-                });
-            }
-            users.sort((a, b) => {return b.count - a.count;});
-            for (let i = 0, len = users.length; i < len; i++) {
-                result_msg += `第${i + 1}名: ${users[i].name}答对${users[i].count}题。\n`;
-            }
-            bot.sendMsg(result_msg, msg.FromUserName);
-            questions[msg.FromUserName] = {};
-            counts[msg.FromUserName] = {};
-        }
-        else {
-            const is_answer = content === question.answer;
-            if (is_answer) {
-                if (count[answerName]) {
-                    count[answerName] += 1;
-                }
-                else {
-                    count[answerName] = 1;
-                }
-                delete question.answer;
-                bot.sendMsg(`恭喜${answerName}答对`, msg.FromUserName);
-                guessPicture(setContent(msg, `猜${question.type}`));
-            }
-            else if (now > question.hint_time && !question.hint) {
-                bot.sendMsg(`答案字数为${question.answer.length}`, msg.FromUserName);
-                question.hint = true;
-            }
-            else if (now > question.hint_answer_time && !question.hint_answer) {
-                bot.sendMsg(`答案第一个字为${question.answer.substr(0, 1)}`, msg.FromUserName);
-                question.hint_answer = true;
-            }
-        }
+        checkAnswerAndNext(msg);
     }
 }
 
@@ -278,4 +210,78 @@ function getAnswerName(msg) {
     }
 
     return "";
+}
+
+function sendImage(msg, type) {
+    const total = Object.keys(answer[type]).length;
+    const random = randomFun(type, total, msg.FromUserName);
+    let img = `./images/${type}/${random}`;
+    const exist = fs.existsSync(`${img}.jpg`);
+    if (exist) {
+        img += ".jpg";
+    }
+    else {
+        img += ".png";
+    }
+
+    const isFirst = Object.keys(questions[msg.FromUserName]).length === 0;
+    if (isFirst) {
+        bot.sendMsg("开始猜图游戏，限时五分钟，看看谁五分钟之内答对最多！加油呦", msg.FromUserName);
+    }
+    bot.uploadMedia(fs.createReadStream(img))
+        .then(res => {
+            return bot.sendPic(res.mediaId, msg.FromUserName);
+        })
+        .catch(err => {
+            console.log(`有问题图片:${img}`);
+            console.log(err);
+        });
+}
+
+function checkAnswerAndNext(msg) {
+    let question = questions[msg.FromUserName];
+    const count = counts[msg.FromUserName];
+    const answerName = getAnswerName(msg);
+    const now = Date.now();
+    const question_time = question.time;
+    const overtime = now > question_time;
+    if (overtime) {
+        let result_msg = "";
+        const users = [];
+        for (const name in count) {
+            users.push({
+                name,
+                count: count[name]
+            });
+        }
+        users.sort((a, b) => {return b.count - a.count;});
+        for (let i = 0, len = users.length; i < len; i++) {
+            result_msg += `第${i + 1}名: ${users[i].name}答对${users[i].count}题。\n`;
+        }
+        bot.sendMsg(result_msg, msg.FromUserName);
+        questions[msg.FromUserName] = {};
+        counts[msg.FromUserName] = {};
+    }
+    else {
+        const is_answer = content === question.answer;
+        if (is_answer) {
+            if (count[answerName]) {
+                count[answerName] += 1;
+            }
+            else {
+                count[answerName] = 1;
+            }
+            delete question.answer;
+            bot.sendMsg(`恭喜${answerName}答对`, msg.FromUserName);
+            guessPicture(setContent(msg, `猜${question.type}`));
+        }
+        else if (now > question.hint_time && !question.hint) {
+            bot.sendMsg(`答案字数为${question.answer.length}`, msg.FromUserName);
+            question.hint = true;
+        }
+        else if (now > question.hint_answer_time && !question.hint_answer) {
+            bot.sendMsg(`答案第一个字为${question.answer.substr(0, 1)}`, msg.FromUserName);
+            question.hint_answer = true;
+        }
+    }
 }
