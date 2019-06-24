@@ -7,12 +7,21 @@ const render  = require("koa-ejs");
 const path    = require("path");
 const fs      = require("fs");
 const tuling  = require("./src/tuLingConfig.json");
+const weapon  = require("./weapon.json");
 let questions = {};
 let counts = {};
+const needInit = {};
 const useFunctions = {};
 const answer = require("./answer.json");
 const topic = Object.keys(answer);
 const robotName = "小小机器人。";
+const weapons = Object.keys(weapon);
+const matchWeapon = /^使用(\S*)攻击/;
+const matchInjuredPerson = /.*@(\S*)/;
+const initBlood = 15;
+const lookWeapon = "查看武器";
+const lookBlood = "查看血量";
+const lookAnswer = "查看答题数";
 
 render(app, {
     root: path.join(__dirname, 'view'),
@@ -57,6 +66,7 @@ app.use(async (ctx, next) => {
                 questions[id] = {};
                 counts[id] = {};
                 useFunctions[id] = {};
+                needInit[id] = 1;
             }
         });
 
@@ -88,13 +98,21 @@ app.use(async (ctx, next) => {
                     /**
                      * 文本消息
                      */
-                    const count = counts[msg.FromUserName];
-                    const isFirst = !count[msg.FromUserName] || Object.keys(count[msg.FromUserName]).length === 0;
+                    const content = getContent(msg);
+                    if (content === "猜图") {
+                        const reply = `猜图: ${topic.join("、")}`;
+                        bot.sendMsg(reply, msg.FromUserName);
+                        return;
+                    }
+                    const isFirst = needInit[msg.FromUserName];
                     if (isFirst) {
                         initMember(msg);
                     }
+                    getBloodList(msg);
                     guessPicture(msg);
+                    attack(msg);
                     autoReply(msg);
+                    getWeaponList(msg);
 
                     break;
                 default:
@@ -133,7 +151,7 @@ function guessPicture(msg) {
     }
     else if (useFunctions[msg.FromUserName].guessPicture) {
         if (content === "结算") {
-            settlement(msg, counts[msg.FromUserName]);
+            settlement(msg);
         }
         else if (content === "过") {
             guessPicture(setContent(msg, `猜${questions[msg.FromUserName].type}`));
@@ -149,7 +167,7 @@ function guessPicture(msg) {
 
 function randomImage(type, fromUserName) {
     const total = Object.keys(answer[type]).length;
-    const random = Math.floor(Math.random() * total);
+    const random = Math.ceil(Math.random() * total);
     let question = questions[fromUserName];
     if (random && answer[type][random]) {
         questions[fromUserName] = {
@@ -223,7 +241,7 @@ function getAnswerName(msg) {
         const user = bot.contacts[msg.FromUserName];
         for (const member of user.MemberList) {
             if (member.UserName === answer_id) {
-                return delHtmlTag(member.NickName);
+                return delHtmlTag(member.DisplayName) || delHtmlTag(member.NickName);
             }
         }
     }
@@ -244,7 +262,13 @@ function sendImage(msg, type) {
     }
 
     if (isFirst) {
-        bot.sendMsg("开始猜图游戏，限时五分钟，看看谁五分钟之内答对最多！加油呦", msg.FromUserName);
+        bot.sendMsg(
+            "开始猜图游戏，限时五分钟，看看谁五分钟之内答对最多！答对题可攻击其他玩家。\n\n" +
+            `回复【${lookWeapon}】可查看武器列表\n` +
+            `回复【${lookBlood}】可查看血量\n` +
+            "回复【使用xxx攻击@xxx】即可攻击其他玩家",
+            msg.FromUserName
+        );
     }
     bot.uploadMedia(fs.createReadStream(img))
         .then(res => {
@@ -258,23 +282,18 @@ function sendImage(msg, type) {
 
 function checkAnswerAndNext(msg, content) {
     let question = questions[msg.FromUserName];
-    const count = counts[msg.FromUserName];
     const answerName = getAnswerName(msg);
     const now = Date.now();
     const question_time = question.time;
     const overtime = now > question_time;
     if (overtime) {
-        settlement(msg, count);
+        settlement(msg);
     }
     else {
         const is_answer = content === question.answer;
+        const UserName = msg.OriginalContent.split(":")[0];
         if (is_answer) {
-            if (count[answerName]) {
-                count[answerName] += 1;
-            }
-            else {
-                count[answerName] = 1;
-            }
+            counts[msg.FromUserName][UserName].count += 1;
             delete question.answer;
             bot.sendMsg(`恭喜${answerName}答对`, msg.FromUserName);
             guessPicture(setContent(msg, `猜${question.type}`));
@@ -282,25 +301,34 @@ function checkAnswerAndNext(msg, content) {
     }
 }
 
-function settlement(msg, count) {
+function settlement(msg) {
+    const count = counts[msg.FromUserName];
     let result_msg = "本轮成绩是\n";
     const users = [];
-    for (const name in count) {
+    for (const UserName in count) {
+        const user = count[UserName];
         users.push({
-            name,
-            count: count[name]
+            name: user.NickName,
+            count: user.count
         });
     }
     users.sort((a, b) => {return b.count - a.count;});
+    let zeroNumber = 0;
     const len = users.length;
     for (let i = 0; i < len; i++) {
         result_msg += `第${i + 1}名: ${users[i].name}答对${users[i].count}题。\n`;
+        if (zeroNumber === 0) {
+            zeroNumber = i;
+        }
     }
+    const randomPerson = Math.ceil(Math.random() * (len - zeroNumber));
 
-    result_msg += `\n\n@${users[len - 1].name} 被大家甩了几街，还不着急？`
+    result_msg += `\n\n@${users[len - randomPerson].name} ${randomWordSettlement()}`
     bot.sendMsg(result_msg, msg.FromUserName);
     questions[msg.FromUserName] = {};
     counts[msg.FromUserName] = {};
+    needInit[msg.FromUserName] = 1;
+    useFunctions[msg.FromUserName].guessPicture = 0;
 }
 
 function getTip(msg, question) {
@@ -322,21 +350,136 @@ function getTip(msg, question) {
     }
 }
 
-function delHtmlTag(str){
-    return str.replace(/<[^>]+>/g,""); //去掉所有的html标记
-}
-
 function initMember(msg) {
+    needInit[msg.FromUserName] = 0;
     const fromUserName = msg.FromUserName;
     const contact = bot.contacts[fromUserName];
     const memberList = contact.MemberList;
     if (memberList) {
         counts[fromUserName] = {};
         for (const member of memberList) {
-            const nickName = delHtmlTag(member.NickName);
-            if (nickName !== robotName) {
-                counts[fromUserName][nickName] = 0;
+            if (member.NickName !== robotName) {
+                counts[fromUserName][member.UserName] = {
+                    NickName: delHtmlTag(member.DisplayName) || delHtmlTag(member.NickName),
+                    count: 0,
+                    blood: initBlood,
+                    consume: 0
+                };
             }
         }
+    }
+}
+
+function delHtmlTag(str){
+    return str.replace(/<[^>]+>/g,""); //去掉所有的html标记
+}
+
+function getWeapon(str) {
+    return str.match(matchWeapon)[1];
+}
+
+function attack(msg) {
+    const content = getContent(msg);
+    const IsAttach = matchWeapon.test(content);
+    if (IsAttach && useFunctions[msg.FromUserName].guessPicture) {
+        const _weapon = getWeapon(content);
+        if (weapons.includes(_weapon)) {
+            const UserName = msg.OriginalContent.split(":")[0];
+            const group = counts[msg.FromUserName];
+            const user = group[UserName];
+            const canConsume = (user.count - user.consume) >= weapon[_weapon].answers;
+            if (canConsume) {
+                const injuredPerson = content.match(matchInjuredPerson)[1];
+                for (const name in group) {
+                    if (group[name].NickName === injuredPerson) {
+                        if (group[name].blood <= 0) {
+                            bot.sendMsg(
+                                `@${group[name].NickName} ${randomWordWeapon()}, 换个人打吧!`, 
+                                msg.FromUserName
+                            );
+                        }
+                        else {
+                            const hurt = weapon[_weapon].hurt
+                            group[name].blood = group[name].blood > hurt ? 
+                                group[name].blood - hurt :
+                                0;
+                            user.consume += weapon[_weapon].answers;
+                            bot.sendMsg(
+                                `${user.NickName}攻击 @${group[name].NickName} 成功，${group[name].NickName}剩余血量${group[name].blood}`, 
+                                msg.FromUserName
+                            );
+                        }
+                    }
+                }
+            }
+            else {
+                const replyMsg = `使用武器${_weapon}需要消耗答题数${weapon[_weapon].answers}, @${user.NickName} 可消耗答题数为${user.count - user.consume}`;
+                bot.sendMsg(replyMsg, msg.FromUserName);
+            }
+        }
+    }
+}
+
+function randomWordWeapon() {
+    const word = [
+        "已经被打的想找妈妈了",
+        "已经被打出翔了"
+    ];
+    const random = Math.ceil(Math.random * word.length);
+    return word[random];
+}
+
+function randomWordSettlement() {
+    const word = [
+        "答对这么少，脑子里都是屎嘛！",
+        "就这水平，低能儿啊！",
+        "快把这个人踢出群，严重拉低智商水平线！",
+        "来一头猪都能答对比你多",
+        "恭喜此人获得诺贝尔傻逼奖",
+        "被大家甩了几街，还不着急？"
+    ];
+
+    const random = Math.ceil(Math.random() * word.length);
+
+    return word[random];
+}
+
+function getBloodList(msg) {
+    const content = getContent(msg);
+    if (content === lookBlood && useFunctions[msg.FromUserName].guessPicture) {
+        const count = counts[msg.FromUserName];
+        let result_msg = "";
+        const users = [];
+        for (const UserName in count) {
+            const user = count[UserName];
+            users.push({
+                name: user.NickName,
+                blood: user.blood,
+                answers: user.count - user.consume
+            });
+        }
+        users.sort((a, b) => {return b.blood - a.blood;});
+        const len = users.length;
+        for (let i = 0; i < len; i++) {
+            result_msg += `【${users[i].name}】
+            剩余答题数: ${users[i].answers}
+            剩余血量: ${users[i].blood}。\n`;
+        }
+    
+        result_msg += `\n\n@${users[0].name} 血量最多，大家赶快一起来干他吧！！！`
+        bot.sendMsg(result_msg, msg.FromUserName);
+    }
+}
+
+function getWeaponList(msg) {
+    const content = getContent(msg);
+    if (content === lookWeapon) {
+        let weaponList = "武器列表\n";
+        for (let weaponName in weapon) {
+            const _weapon = weapon[weaponName];
+            weaponList += `武器【${weaponName}】: 攻击系数:${_weapon.hurt}, 所需答题数:${_weapon.answers}\n`;
+        }
+        weaponList += "\n说明: 攻击系数为1的武器可消耗人一格血。"
+        bot.sendMsg(weaponList, msg.FromUserName);
     }
 }
