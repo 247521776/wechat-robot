@@ -1,0 +1,22 @@
+{
+	"石头": {
+		"hurt": 0.5,
+		"answers": 1
+	},
+	"刀": {
+		"hurt": 1,
+		"answers": 2
+	},
+	"飞镖": {
+		"hurt": 1.5,
+		"answers": 3
+	},
+	"枪": {
+		"hurt": 2,
+		"answers": 4
+	},
+	"大炮": {
+		"hurt": 3,
+		"answers": 5
+	}
+}
