@@ -295,7 +295,7 @@ function checkAnswerAndNext(msg, content) {
         if (is_answer) {
             counts[msg.FromUserName][UserName].count += 1;
             delete question.answer;
-            bot.sendMsg(`恭喜${answerName}答对`, msg.FromUserName);
+            bot.sendMsg(`恭喜【${answerName}】答对`, msg.FromUserName);
             guessPicture(setContent(msg, `猜${question.type}`));
         }
     }
@@ -316,7 +316,7 @@ function settlement(msg) {
     let zeroNumber = 0;
     const len = users.length;
     for (let i = 0; i < len; i++) {
-        result_msg += `第${i + 1}名: ${users[i].name}答对${users[i].count}题。\n`;
+        result_msg += `第${i + 1}名: 【${users[i].name}】答对${users[i].count}题。\n`;
         if (zeroNumber === 0) {
             zeroNumber = i;
         }
@@ -405,7 +405,7 @@ function attack(msg) {
                                 0;
                             user.consume += weapon[_weapon].answers;
                             bot.sendMsg(
-                                `${user.NickName}攻击 @${group[name].NickName} 成功，${group[name].NickName}剩余血量${group[name].blood}`, 
+                                `【${user.NickName}】攻击 @${group[name].NickName} 成功，【${group[name].NickName}】剩余血量${group[name].blood}`, 
                                 msg.FromUserName
                             );
                         }
