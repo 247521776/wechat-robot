@@ -18,7 +18,7 @@ const robotName = "小小机器人。";
 const weapons = Object.keys(weapon);
 const matchWeapon = /^使用(\S*)攻击/;
 const matchInjuredPerson = /.*@(\S*)/;
-const initBlood = 15;
+const initBlood = 5;
 const lookWeapon = "查看武器";
 const lookBlood = "查看血量";
 const lookAnswer = "查看答题数";
@@ -425,7 +425,7 @@ function randomWordWeapon() {
         "已经被打的想找妈妈了",
         "已经被打出翔了"
     ];
-    const random = Math.ceil(Math.random * word.length);
+    const random = Math.floor(Math.random * word.length);
     return word[random];
 }
 
@@ -439,7 +439,7 @@ function randomWordSettlement() {
         "被大家甩了几街，还不着急？"
     ];
 
-    const random = Math.ceil(Math.random() * word.length);
+    const random = Math.floor(Math.random() * word.length);
 
     return word[random];
 }
@@ -482,4 +482,12 @@ function getWeaponList(msg) {
         weaponList += "\n说明: 攻击系数为1的武器可消耗人一格血。"
         bot.sendMsg(weaponList, msg.FromUserName);
     }
+}
+
+function randomAttackWord() {
+    const word = [
+        "被打掉了一条内裤",
+        ""
+    ];
+
 }
