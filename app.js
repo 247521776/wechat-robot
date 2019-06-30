@@ -8,6 +8,14 @@ const path    = require("path");
 const fs      = require("fs");
 const tuling  = require("./src/tuLingConfig.json");
 const weapon  = require("./weapon.json");
+const steal   = require("./src/steal");
+const {
+    getContent,
+    setContent,
+    getAnswerName,
+    games,
+    delHtmlTag
+} = require("./src/utils");
 let questions = {};
 let counts = {};
 const needInit = {};
@@ -21,7 +29,6 @@ const matchInjuredPerson = /.*@(\S*)/;
 const initBlood = 5;
 const lookWeapon = "查看武器";
 const lookBlood = "查看血量";
-const lookAnswer = "查看答题数";
 
 render(app, {
     root: path.join(__dirname, 'view'),
@@ -32,6 +39,7 @@ render(app, {
 let bot;
 let syncData = null;
 let start = 0;
+let uuid = null;
 
 app.use(async (ctx, next) => {
     if (!start) {
@@ -77,6 +85,8 @@ app.use(async (ctx, next) => {
             console.log('登出成功');
             // 清除数据
             syncData = null;
+            start = 0;
+            uuid = null;
         });
 
         /**
@@ -104,6 +114,17 @@ app.use(async (ctx, next) => {
                         bot.sendMsg(reply, msg.FromUserName);
                         return;
                     }
+                    else if (content === "游戏") {
+                        let result = `现有游戏:\n`;
+
+                        for (const game_name in games) {
+                            const game = games[game_name];
+                            result += `         游戏【${game.name}】，${game.desc}\n`;
+                        }
+
+                        bot.sendMsg(result, msg.FromUserName);
+                        return;
+                    }
                     const isFirst = needInit[msg.FromUserName];
                     if (isFirst) {
                         initMember(msg);
@@ -113,23 +134,30 @@ app.use(async (ctx, next) => {
                     attack(msg);
                     autoReply(msg);
                     getWeaponList(msg);
+                    steal.steal(msg, bot);
 
                     break;
                 default:
                     break
             }
         });
+
     }
     /**
      * uuid事件，参数为uuid，根据uuid生成二维码
      */
     await ctx.render("index", {
-        qrcode: await uuid()
+        qrcode: await uuidFun()
     });
-    function uuid() {
+    function uuidFun() {
         return new Promise((resolve, reject) => {
-            bot.on('uuid', (uuid) => {
-                resolve(`https://login.weixin.qq.com/l/${uuid}`);
+            const uuid_url = "https://login.weixin.qq.com/l/";
+            if (uuid) {
+                resolve(`${uuid_url}${uuid}`);
+            }
+            bot.on('uuid', (_uuid) => {
+                uuid = _uuid;
+                resolve(`${uuid_url}${uuid}`);
             });
         });
     }
@@ -190,6 +218,9 @@ function autoReply(msg) {
     const can_auto_reply = content.indexOf(_key) !== -1;
     if (can_auto_reply) {
         const chat_content = content.replace(_key, "");
+        if (chat_content === "偷") {
+            return;
+        }
 
         request.post({
             url: "http://www.tuling123.com/openapi/api",
@@ -205,48 +236,6 @@ function autoReply(msg) {
             }
         });
     }
-}
-
-function getContent(msg) {
-    const is_group = msg.FromUserName.indexOf("@@") !== -1;
-
-    let content;
-    if (is_group) {
-        content = msg.OriginalContent.split("<br/>")[1];
-    }
-    else {
-        content = msg.Content;
-    }
-
-    return content;
-}
-
-function setContent(msg, content) {
-    const is_group = msg.FromUserName.indexOf("@@") !== -1;
-
-    if (is_group) {
-        const _content = msg.OriginalContent.split("<br/>")[0];
-        msg.OriginalContent = `${_content}<br/>${content}`;
-    }
-    else {
-        msg.Content = content;
-    }
-
-    return msg;
-}
-
-function getAnswerName(msg) {
-    if (bot.contacts) {
-        const answer_id = msg.OriginalContent.split(":")[0];
-        const user = bot.contacts[msg.FromUserName];
-        for (const member of user.MemberList) {
-            if (member.UserName === answer_id) {
-                return delHtmlTag(member.DisplayName) || delHtmlTag(member.NickName);
-            }
-        }
-    }
-
-    return "";
 }
 
 function sendImage(msg, type) {
@@ -282,7 +271,7 @@ function sendImage(msg, type) {
 
 function checkAnswerAndNext(msg, content) {
     let question = questions[msg.FromUserName];
-    const answerName = getAnswerName(msg);
+    const answerName = getAnswerName(msg, bot);
     const now = Date.now();
     const question_time = question.time;
     const overtime = now > question_time;
@@ -368,10 +357,6 @@ function initMember(msg) {
             }
         }
     }
-}
-
-function delHtmlTag(str){
-    return str.replace(/<[^>]+>/g,""); //去掉所有的html标记
 }
 
 function getWeapon(str) {

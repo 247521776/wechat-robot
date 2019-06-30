@@ -1,0 +1,121 @@
+{
+    "钱": {
+        "attribute": "miss",
+        "number": 100,
+        "price": 1,
+        "unit": "块",
+        "desc": ""
+    },
+    "臭袜子": {
+        "attribute": "miss",
+        "number": 20,
+        "price": -50,
+        "unit": "双",
+        "desc": ""
+    },
+    "臭鞋": {
+        "attribute": "miss",
+        "number": 3,
+        "price": -60,
+        "unit": "双",
+        "desc": ""
+    },
+    "假发": {
+        "attribute": "miss",
+        "number": 10,
+        "price": 100,
+        "unit": "顶",
+        "desc": ""
+    },
+    "假牙": {
+        "attribute": "miss",
+        "number": 2,
+        "price": 150,
+        "unit": "副",
+        "desc": ""
+    },
+    "裤子": {
+        "attribute": "miss",
+        "number": 5,
+        "price": 50,
+        "unit": "条",
+        "desc": ""
+    },
+    "丁字裤": {
+        "attribute": "miss",
+        "number": 2,
+        "price": 10,
+        "unit": "条",
+        "desc": ""
+    },
+    "发馊了的内裤": {
+        "attribute": "miss",
+        "number": 3,
+        "price": -120,
+        "unit": "条",
+        "desc": ""
+    },
+    "四手的内裤": {
+        "attribute": "miss",
+        "number": 1,
+        "price": -200,
+        "unit": "条",
+        "desc": ""
+    },
+    "情趣内裤": {
+        "attribute": "miss",
+        "number": 4,
+        "price": 30,
+        "unit": "条",
+        "desc": ""
+    },
+    "性感小背心": {
+        "attribute": "miss",
+        "number": 2,
+        "price": 50,
+        "unit": "个",
+        "desc": ""
+    },
+    "傻狗": {
+        "attribute": "miss",
+        "number": 1,
+        "price": 100,
+        "unit": "条",
+        "desc": ""
+    },
+    "租借的三手自行车": {
+        "attribute": "miss",
+        "number": 1,
+        "price": 16,
+        "unit": "辆",
+        "desc": ""
+    },
+    "十八手奥拓": {
+        "attribute": "miss",
+        "number": 1,
+        "price": 1,
+        "unit": "辆",
+        "desc": ""
+    },
+    "豪华汽车模型": {
+        "attribute": "miss",
+        "number": 5,
+        "price": 165,
+        "unit": "辆",
+        "desc": ""
+    },
+    "漏雨的石屋": {
+        "attribute": "miss",
+        "number": 1,
+        "price": 110,
+        "unit": "间",
+        "desc": "十分简陋，岌岌可危的石屋。"
+    },
+    "豪华二层楼房": {
+        "attribute": "miss",
+        "number": 1,
+        "price": 500,
+        "unit": "间",
+        "desc": ""
+    }
+}
