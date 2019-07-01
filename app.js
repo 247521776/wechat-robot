@@ -14,8 +14,13 @@ const {
     setContent,
     getAnswerName,
     games,
-    delHtmlTag
+    delHtmlTag,
+    randomFloor,
+    randomCeil,
+    getUserName,
+    getUserNameByName
 } = require("./src/utils");
+const article = require("./src/steal/article.json");
 let questions = {};
 let counts = {};
 const needInit = {};
@@ -29,6 +34,9 @@ const matchInjuredPerson = /.*@(\S*)/;
 const initBlood = 5;
 const lookWeapon = "查看武器";
 const lookBlood = "查看血量";
+const rate = 20;
+const consume_question = 2;
+const suck_blood_regex = /吸血@(\S*)/;
 
 render(app, {
     root: path.join(__dirname, 'view'),
@@ -178,6 +186,7 @@ function guessPicture(msg) {
         sendImage(msg, type);
     }
     else if (useFunctions[msg.FromUserName].guessPicture) {
+        suckBlood(msg, bot);
         if (content === "结算") {
             settlement(msg);
         }
@@ -390,9 +399,16 @@ function attack(msg) {
                                 0;
                             user.consume += weapon[_weapon].answers;
                             bot.sendMsg(
-                                `【${user.NickName}】攻击 @${group[name].NickName} 成功，【${group[name].NickName}】剩余血量${group[name].blood}`, 
+                                `【${user.NickName}】攻击 @${group[name].NickName} 成功，【${group[name].NickName}】剩余血量${group[name].blood}\n\n【${group[name].NickName}】${randomAttackWord()}`, 
                                 msg.FromUserName
                             );
+
+                            if (group[name].blood === 0) {
+                                bot.sendMsg(
+                                    `@${group[name].NickName} 你被打的大姨妈都没了，可以通过使用吸血功能恢复血量，使用${consume_question}个答题数可进行一次吸血，每次吸血概率为${rate}%，成功则恢复一点血量。`, 
+                                    msg.FromUserName
+                                );
+                            }
                         }
                     }
                 }
@@ -470,9 +486,64 @@ function getWeaponList(msg) {
 }
 
 function randomAttackWord() {
-    const word = [
-        "被打掉了一条内裤",
-        ""
-    ];
+    const article_names = Object.keys(article);
+    const random = randomFloor(article_names.length);
+    const _article = article[article_names[random]];
+    const random_number = randomCeil(_article.number);
+    return `被打掉了${random_number}${_article.unit}${article_names[random]}`;
 
+}
+
+function suckBlood(msg, bot) {
+    const content = getContent(msg);
+    const FromUserName = msg.FromUserName;
+    const UserName = getUserName(msg);
+    const user = counts[FromUserName][UserName];
+    const user_blood = user.blood;
+    const name = getAnswerName(msg, bot);
+    const is_suck_blood = suck_blood_regex.test(content);
+
+    if (is_suck_blood) {
+        if (user_blood > 0) {
+            bot.sendMsg(
+                `@${name} 有血还吸，你是卫生棉嘛？`, 
+                msg.FromUserName
+            );
+        }
+        else {
+            const _user_name = content.match(suck_blood_regex)[1];
+            const _UserName = getUserNameByName(counts[FromUserName], _user_name);
+            const _user = counts[FromUserName][_UserName];
+
+            if (_user.blood > 0) {
+                const random = randomCeil(100);
+                if (random < rate) {
+                    counts[FromUserName][UserName].blood += 1;
+                    counts[FromUserName][_UserName].blood -= 1;
+
+                    bot.sendMsg(
+                        `@${name} 吸血成功，剩余血量：${counts[FromUserName][UserName].blood}`, 
+                        msg.FromUserName
+                    );
+
+                    bot.sendMsg(
+                        `@${_user_name} 你被吸血了，剩余血量：${counts[FromUserName][_UserName].blood}`, 
+                        msg.FromUserName
+                    );
+                }
+                else {
+                    bot.sendMsg(
+                        `@${name} 吸血吸到姨妈巾，再试试吧。`, 
+                        msg.FromUserName
+                    );
+                }
+            }
+            else {
+                bot.sendMsg(
+                    `@${name} 从石头上吸血，亏你想的出来！`, 
+                    msg.FromUserName
+                );
+            }
+        }
+    }
 }
