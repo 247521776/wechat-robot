@@ -88,7 +88,7 @@ function _steal(msg, bot) {
                 const random_article = randomArticle(FromUserName, UserName);
                 const miss_number = missArticle(FromUserName, UserName, random_article.name);
                 bot.sendMsg(
-                    `@${answer_name} 攻击法官，丧心病狂，法官决定毁掉你的${miss_number}${random_article.unit}${random_article.name}。`, 
+                    `@${answer_name} 攻击法官，丧心病狂，法官决定毁掉你的${miss_number}${random_article.unit}${random_article.name}，价值【${random_article.price * miss_number}】元。`, 
                     FromUserName
                 );
             }
@@ -108,7 +108,7 @@ function _steal(msg, bot) {
                 human[FromUserName][UserName].articles[random_article.name].number += miss_number;
     
                 bot.sendMsg(
-                    `@${stolen_person} 你被偷窃了，丢失了${miss_number}${random_article.unit}${random_article.name}。`, 
+                    `@${stolen_person} 你被偷窃了，丢失了${miss_number}${random_article.unit}${random_article.name}，价值【${random_article.price * miss_number}】元。`, 
                     FromUserName
                 );
             }
@@ -138,7 +138,8 @@ function randomArticle(FromUserName, UserName) {
     const article_name = articles[_random];
     return {
         name: article_name,
-        unit: user_article[article_name].unit
+        unit: user_article[article_name].unit,
+        price: user_article[article_name].price
     };
 }
 
@@ -215,7 +216,7 @@ function alms(msg, bot) {
         const miss_number = missArticle(FromUserName, alms_UserName, random_article.name);
         _article[random_article.name].number += miss_number
         bot.sendMsg(
-            `${person.NickName}向 @${alms_person} 乞讨到了${miss_number}${random_article.unit}${random_article.name}`, 
+            `${person.NickName}向 @${alms_person} 乞讨到了${miss_number}${random_article.unit}${random_article.name}，价值【${random_article.price * miss_number}】元`, 
             FromUserName
         );
     }
