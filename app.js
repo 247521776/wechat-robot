@@ -426,7 +426,7 @@ function randomWordWeapon() {
         "已经被打的想找妈妈了",
         "已经被打出翔了"
     ];
-    const random = Math.floor(Math.random * word.length);
+    const random = Math.floor(Math.random() * word.length);
     return word[random];
 }
 
