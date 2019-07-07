@@ -18,7 +18,8 @@ const {
     randomFloor,
     randomCeil,
     getUserName,
-    getUserNameByName
+    getUserNameByName,
+    batchGetContact
 } = require("./src/utils");
 const article = require("./src/steal/article.json");
 let questions = {};
@@ -74,7 +75,7 @@ app.use(async (ctx, next) => {
         /**
          * 登录成功事件
          */
-        bot.on('login', () => {
+        bot.on('login', async () => {
             console.log('登录成功');
             // 保存数据，将数据序列化之后保存到任意位置
             syncData = JSON.stringify(bot.botData);
@@ -106,7 +107,7 @@ app.use(async (ctx, next) => {
         /**
          * 如何处理会话消息
          */
-        bot.on('message', msg => {
+        bot.on('message', async (msg) => {
             /**
              * 判断消息类型
              */
@@ -135,7 +136,7 @@ app.use(async (ctx, next) => {
                     }
                     const isFirst = needInit[msg.FromUserName];
                     if (isFirst) {
-                        initMember(msg);
+                        await initMember(msg);
                     }
                     getBloodList(msg);
                     guessPicture(msg);
@@ -348,11 +349,11 @@ function getTip(msg, question) {
     }
 }
 
-function initMember(msg) {
+async function initMember(msg) {
     needInit[msg.FromUserName] = 0;
     const fromUserName = msg.FromUserName;
-    const contact = bot.contacts[fromUserName];
-    const memberList = contact.MemberList;
+    const contacts = await batchGetContact(fromUserName, bot);
+    const memberList = contacts[0].MemberList;
     if (memberList) {
         counts[fromUserName] = {};
         for (const member of memberList) {

@@ -87,3 +87,7 @@ exports.getUserNameByName = (object, NickName) => {
 exports.delHtmlTag = function (str){
     return str.replace(/<[^>]+>/g,""); //去掉所有的html标记
 }
+
+exports.batchGetContact = async (UserName, bot) => {
+    return await bot.batchGetContact([{UserName}]);
+}

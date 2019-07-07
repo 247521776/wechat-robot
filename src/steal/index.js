@@ -7,7 +7,8 @@ const {
     randomCeil,
     getUserNameByName,
     games,
-    delHtmlTag
+    delHtmlTag,
+    batchGetContact
 } = require("../utils");
 const human = {};
 const robotName = "小小机器人。";
@@ -23,10 +24,10 @@ const time = 2;
 const rule = {};
 
 module.exports = {
-    steal(msg, bot) {
+    async steal(msg, bot) {
         const needInit = !human[msg.FromUserName] || Object.keys(human[msg.FromUserName]).length === 0;
         if (needInit) {
-            init(msg, bot);
+            await init(msg, bot);
         }
         const content = getContent(msg);
         if (content === steal_name) {
@@ -55,10 +56,10 @@ module.exports = {
     },
 }
 
-function init(msg, bot) {
+async function init(msg, bot) {
     const fromUserName = msg.FromUserName;
-    const contact = bot.contacts[fromUserName];
-    const memberList = contact.MemberList;
+    const contacts = await batchGetContact(fromUserName, bot);
+    const memberList = contacts[0].MemberList;
     if (memberList) {
         human[fromUserName] = {};
         for (const member of memberList) {
