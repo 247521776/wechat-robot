@@ -353,6 +353,7 @@ async function initMember(msg) {
     needInit[msg.FromUserName] = 0;
     const fromUserName = msg.FromUserName;
     const contacts = await batchGetContact(fromUserName, bot);
+    bot.contacts[fromUserName] = contacts;
     const memberList = contacts[0].MemberList;
     if (memberList) {
         counts[fromUserName] = {};
