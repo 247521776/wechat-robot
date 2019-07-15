@@ -15,11 +15,11 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.3",
     "iconv-lite": "^0.4.24",
-    "koa": "^2.3.0",
-    "koa-ejs": "^4.1.0",
-    "lodash": "^4.17.4",
+    "koa": "^2.7.0",
+    "koa-ejs": "^4.2.0",
+    "lodash": "^4.17.14",
     "qrcode-terminal": "^0.11.0",
-    "request": "^2.81.0",
+    "request": "^2.88.0",
     "wechat4u": "^0.7.7"
   },
   "description": "weixin robot",
