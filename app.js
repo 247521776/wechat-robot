@@ -289,7 +289,7 @@ function checkAnswerAndNext(msg, content) {
         settlement(msg);
     }
     else {
-        const is_answer = content === question.answer;
+        const is_answer = content.toUpperCase() === question.answer.toUpperCase();
         const UserName = msg.OriginalContent.split(":")[0];
         if (is_answer) {
             counts[msg.FromUserName][UserName].count += 1;
